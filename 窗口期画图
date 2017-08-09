@@ -1,0 +1,40 @@
+library(ggplot2)
+library(plyr)
+library(readxl)
+setwd("E:\\分析\\交接工作\\工程在建")
+date <- read.csv("A01可作业小时.csv")
+#data <- read_excel("A01.xlsx",sheet=1)
+ performday <- function(x) {
+    if (x < 5) {
+      y <- "can't work"
+    }else if(x >=5 & x < 8) {
+      y <- "half a day"
+    }else if(x >= 8 & x < 11 ) {
+      y <- "most of the day"
+    }else {
+      y <- "all day"
+    }
+    return(y)
+  }
+  
+  temp <- seq.Date(from = as.Date("2017/01/01",format = "%Y/%m/%d"), by = "day", length.out = 365)
+  dat <- data.frame(date=temp,date$hours)
+  names(dat)[2] <- "hours" 
+  dat$month<-as.numeric(as.POSIXlt(dat$date)$mon+1)
+  dat$monthf<-factor(dat$month,levels=as.character(1:12),labels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),ordered=TRUE)
+  dat$weekday<-as.POSIXlt(dat$date)$wday
+  dat$weekdayf<-factor(dat$weekday,levels=c(1:6,0),labels=c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"),ordered=TRUE)
+  dat$week <- as.numeric(format(dat$date,"%W"))
+  dat<-ddply(dat,.(monthf),transform,monthweek=1+week-min(week))
+  dat$monthweek <- factor(dat$monthweek,levels=rev(0:6))
+  
+  
+  
+  
+  
+  dat <- transform(dat, performD = sapply(dat$hours,  performday))
+  #pdf(paste0("窗口期"  , "画图.pdf"),width=8.5, height=11)
+  cols <- c("all day" = "blue", "most of the day" = "#BA55D3", "can't work"="grey" , "half a day" = "#FFB90F")
+  windowsFonts(myFont = windowsFont("微软雅黑"))
+  ggplot(dat,aes(weekdayf,monthweek,fill=dat$performD))+  geom_tile(colour='white') +  facet_wrap(~monthf ,nrow=3) +  scale_fill_manual(values = cols,name = "legend") + geom_text(aes(label = dat$hours),size=1.5,nudge_x=-0.3,nudge_y=0.3)
+  #dev.off()
